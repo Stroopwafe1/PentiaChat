@@ -1,13 +1,17 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoomsListScreen from '../screens/rooms-list/RoomsList.screen';
 import SplashScreen from '../screens/splash/Splash.screen';
-import { ReactNode, useContext } from 'react';
+import { ReactNode, useContext, useEffect, useState } from 'react';
 import { FirebaseContext } from './providers/FirebaseContextProvider';
 import LoginScreen from '../screens/login/Login.screen';
-import { Button } from 'react-native';
+import { ActivityIndicator, Button, Linking, Pressable, Text, useColorScheme, View } from 'react-native';
+import RoomScreen from '../screens/room/Room.screen';
+import { Screens } from '../screens/NavigatorScreens';
+import { getMessaging } from '@react-native-firebase/messaging';
+import { Room } from '../models/Room.model';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<Screens>();
 
 const Navigator = () => {
 	const firebaseContext = useContext(FirebaseContext);
@@ -31,6 +35,7 @@ const Navigator = () => {
 				),
 			}}>
 				<Stack.Screen name="Rooms" component={RoomsListScreen} />
+				<Stack.Screen name="Room" component={RoomScreen} initialParams={{ id: '', name: '' }} />
 			</Stack.Group>
 		);
 	}

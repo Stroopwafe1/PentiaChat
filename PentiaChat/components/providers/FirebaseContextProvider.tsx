@@ -15,21 +15,67 @@ export type FirebaseContextType = {
 	app: ReactNativeFirebase.FirebaseApp | undefined;
 	auth: FirebaseAuthTypes.Module | undefined;
 	user: FirebaseAuthTypes.User | null,
-	setUser: Dispatch<SetStateAction<FirebaseAuthTypes.User | null>>,
 	initialising: boolean,
+	userCache: Map<string, User>;
+	subscribeToTopic: (topic: string) => Promise<void>;
+	unsubscribeFromTopic: (topic: string) => Promise<void>;
 }
 
 export const FirebaseContext = createContext<FirebaseContextType>({
 	app: undefined,
 	auth: undefined,
 	user: null,
-	setUser: () => {},
 	initialising: false,
+	userCache: new Map<string, User>(),
+	subscribeToTopic: async (_topic: string) => {},
+	unsubscribeFromTopic: async (_topic) => {},
 });
 
 export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 	const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
 	const [initialising, setInitialising] = useState<boolean>(true);
+	const [userCache, setUserCache] = useState<Map<string, User>>(new Map());
+
+	const app = getApp();
+	const auth = getAuth(app);
+	const firestore = getFirestore();
+	const messaging = getMessaging();
+
+	const subscribeToTopic = async (topic: string) => {
+		let granted = false;
+		const savedInfo = await AsyncStorage.getItem(`notifications-${topic}`);
+		if (savedInfo !== null) {
+			if (savedInfo === 'never_ask_again') {
+				return;
+			} else {
+				granted = savedInfo === 'granted';
+			}
+		}
+		if (granted) {
+			return messaging.subscribeToTopic(topic);
+		}
+
+		if (Platform.OS === 'android') {
+			granted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+			if (!granted) {
+				const status = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+				granted = status === 'granted';
+				await AsyncStorage.setItem(`notifications-${topic}`, status);
+			}
+		} else if (Platform.OS === 'ios') {
+			const status = await messaging.requestPermission();
+			granted =	status === AuthorizationStatus.AUTHORIZED ||
+						status === AuthorizationStatus.PROVISIONAL;
+			if (granted) {
+				await AsyncStorage.setItem(`notifications-${topic}`, 'granted');
+			} else if (status === AuthorizationStatus.DENIED) {
+				await AsyncStorage.setItem(`notifications-${topic}`, 'denied');
+			}
+		}
+		if (granted) {
+			return messaging.subscribeToTopic(topic);
+		}
+	};
 
 	// Handle user state changes
 	const authStateChanged = (_user: FirebaseAuthTypes.User | null) => {
@@ -37,10 +83,21 @@ export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 		if (initialising) {
 			setInitialising(false);
 		}
-	};
+		if (_user !== null) {
+			// Add user to database if not exists yet
+			const newUserRef = doc(firestore, 'Users', _user.uid);
 
-	const app = getApp();
-	const auth = getAuth(app);
+			setDoc(newUserRef, {
+				uid: _user.uid,
+				avatarURL: _user.photoURL,
+				name: _user.displayName,
+			}).catch((error) => {
+				// We don't want to inform the user if this failed
+				// but we'd obviously log this to our development logs service somewhere
+				console.error(error);
+			});
+		}
+	};
 
 	useEffect(() => {
 		const subscriber = onAuthStateChanged(auth, authStateChanged);
@@ -48,9 +105,39 @@ export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
+	useEffect(() => {
+		if (user === null) {
+			return () => {};
+		}
+
+		const q = query(collection(firestore, 'Users'));
+		const subscriber = onSnapshot(q, (querySnapshot) => {
+			const tempUserCache = new Map<string, User>();
+
+			if (querySnapshot === null) {
+				Alert.alert('Permissions Error', 'Something went wrong with the permissions. Could not fetch data');
+				return () => subscriber();
+			}
+			querySnapshot?.forEach(documentSnapshot => {
+				const userData: User = {
+					...documentSnapshot.data(),
+					key: documentSnapshot.id,
+				} as any; // We know it is the correct data, but Typescript cannot infer that from the callback
+				tempUserCache.set(userData.key, userData);
+			});
+
+			setUserCache(tempUserCache);
+		});
+
+		// Unsubscribe from events when no longer in use
+		return () => subscriber();
+	}, [user, firestore]);
+
 	return (
-		<FirebaseContext.Provider value={{app, auth, user, setUser, initialising}}>
-			{props.children}
-		</FirebaseContext.Provider>
+		<>
+			<FirebaseContext.Provider value={{app, auth, user, initialising, userCache, subscribeToTopic, unsubscribeFromTopic: messaging.unsubscribeFromTopic}}>
+				{props.children}
+			</FirebaseContext.Provider>
+		</>
 	);
 };
