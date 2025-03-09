@@ -1,6 +1,11 @@
 import { getApp, ReactNativeFirebase } from '@react-native-firebase/app';
 import { FirebaseAuthTypes, getAuth, onAuthStateChanged } from '@react-native-firebase/auth';
-import { createContext, Dispatch, ReactNode, SetStateAction, useEffect, useState } from 'react';
+import { createContext, ReactNode, useEffect, useState } from 'react';
+import { User } from '../../models/User.model';
+import { collection, doc, getFirestore, onSnapshot, query, setDoc } from '@react-native-firebase/firestore';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
+import { getMessaging, AuthorizationStatus } from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type FirebaseContextProps = {
 	children: ReactNode
