@@ -13,8 +13,59 @@ import { Room } from '../models/Room.model';
 
 const Stack = createNativeStackNavigator<Screens>();
 
+function buildDeepLinkFromNotificationData(data: any): string | null {
+	if ('roomID' in data) {
+		const roomID = data?.roomID;
+		if (typeof roomID === 'string') {
+			return `pentiachat://room/${roomID}`;
+		}
+		console.warn('Missing roomID');
+	}
+	return null;
+}
+
+const linking = {
+	prefixes: ['pentiachat://'],
+	config: {
+		screens: {
+			Room: 'room/:id/:name',
+		},
+	},
+	async getInitialURL() {
+		const url = await Linking.getInitialURL();
+		if (typeof url === 'string') {
+			return url;
+		}
+
+		//getInitialNotification: When the application is opened from a quit state.
+
+		const message = await getMessaging().getInitialNotification();
+		const deeplinkURL = buildDeepLinkFromNotificationData(message?.data);
+		if (typeof deeplinkURL === 'string') {
+			return deeplinkURL;
+		}
+	},
+	subscribe(listener: (url: string) => void) {
+		//onNotificationOpenedApp: When the application is running, but in the background.
+		const unsubscribe = getMessaging().onNotificationOpenedApp(remoteMessage => {
+			const url = buildDeepLinkFromNotificationData(remoteMessage.data);
+			if (typeof url === 'string') {
+				listener(url);
+			}
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	},
+};
+
 const Navigator = () => {
 	const firebaseContext = useContext(FirebaseContext);
+	const theme = useColorScheme() === 'dark' ? DarkTheme : DefaultTheme;
+
+	const [notificationText, setNotificationText] = useState('');
+	const [notificationRoom, setNotificationRoom] = useState<Room|null>(null);
 
 	let screensAvailable: ReactNode | undefined;
 
@@ -40,9 +91,29 @@ const Navigator = () => {
 		);
 	}
 
+	useEffect(() => {
+		const subscriber = getMessaging().onMessage(async message => {
+			if (message.notification) {
+				if (message.data) {
+					setNotificationRoom(message.data?.room as Room || null);
+				}
+				setNotificationText(message.notification.body || '');
+			}
+		});
+
+		return subscriber;
+	}, []);
+
 	return (
 		<>
-		<NavigationContainer>
+		<Pressable onPress={() => {
+			Linking.openURL(`pentiachat://room/${notificationRoom?.key}/${notificationRoom?.name}`);
+		}}>
+			<View>
+				<Text>{notificationText}</Text>
+			</View>
+		</Pressable>
+		<NavigationContainer linking={linking} theme={theme} fallback={<ActivityIndicator animating />}>
 			<Stack.Navigator>
 				{screensAvailable}
 			</Stack.Navigator>
