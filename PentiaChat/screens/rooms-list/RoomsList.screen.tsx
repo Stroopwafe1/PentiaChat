@@ -1,6 +1,7 @@
 import { collection, getFirestore, orderBy, query, Timestamp } from '@react-native-firebase/firestore';
 import { Room } from '../../models/Room.model';
 import RoomListEntry from './RoomListEntry';
+import FirebaseList from '../../components/FirebaseList';
 import { useState } from 'react';
 
 const RoomsListScreen = () => {
@@ -19,9 +20,18 @@ const RoomsListScreen = () => {
 	const q = query(collection(firestore, 'Rooms'), orderBy('lastUpdated'));
 
 	return (
-		<View>
-			<Text>You are in Rooms overview!</Text>
-		</View>
+		<>
+		<FirebaseList<Room>
+			setSkeleton={setSkeleton}
+			query={q}
+			inverted={false}
+			includeMetadata={true}
+			renderItem={({ item }) => (
+				<RoomListEntry skeleton={isSkeleton} id={item.key} key={item.key} name={item.name} description={item.description} lastUpdated={item.lastUpdated}/>
+			)}
+			skeletonData={shadowRooms}
+			/>
+		</>
 	);
 };
 
