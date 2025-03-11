@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Message } from '../../models/Message.model';
 import { getFirestore, query, collection, orderBy, limit, Timestamp, addDoc, doc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import FirebaseList from '../../components/FirebaseList';
@@ -25,7 +25,10 @@ const RoomScreen = ({navigation, route}: Props) => {
 
 	const style = getRoomStyles(useTheme());
 
-	navigation.setOptions({headerTitle: route.params.name});
+	useEffect(() => {
+		navigation.setOptions({headerTitle: route.params.name});
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const shadowMessages: Message[] = [];
 	for (let i = 0; i < 6; i++) {
@@ -47,6 +50,10 @@ const RoomScreen = ({navigation, route}: Props) => {
 			return;
 		}
 		setIsSending(true);
+
+		// This does not need to be awaited because it's not necessary to have the message show up.
+		// It's just for setting up notifications after the message is sent
+		firebaseContext.subscribeToTopic(`room-${route.params.id}`);
 
 		await addDoc(collection(firestore, 'Rooms', route.params.id, 'Messages'), {
 			authorID: firebaseContext.user!.uid,

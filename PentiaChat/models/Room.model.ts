@@ -9,3 +9,8 @@ export type RoomDTO = {
 	description: string;
 	lastUpdated: Timestamp;
 };
+
+export type RoomLink = {
+	key: string,
+	name: string,
+};

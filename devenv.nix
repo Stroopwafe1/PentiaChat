@@ -1,5 +1,8 @@
 { pkgs, lib, config, inputs, ... }:
 
+let
+  unstable = import inputs.unstable { system = pkgs.stdenv.system; config.allowUnfree = true; };
+in
 {
   env.EDGE_PATH = "${pkgs.ungoogled-chromium}";
 
@@ -11,7 +14,7 @@
     pkgs.firebase-tools
     pkgs.android-tools
     pkgs.nodejs_22
-    pkgs.android-studio
+    unstable.android-studio
     pkgs.vscodium-fhs
   ];
 
