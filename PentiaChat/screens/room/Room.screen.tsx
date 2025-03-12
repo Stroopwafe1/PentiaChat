@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Message } from '../../models/Message.model';
-import { getFirestore, query, collection, orderBy, limit, Timestamp, addDoc, doc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { getFirestore, query, collection, orderBy, limit, Timestamp, addDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import FirebaseList from '../../components/FirebaseList';
 import ChatMessage from './ChatMessage';
 import { FirebaseContext } from '../../components/providers/FirebaseContextProvider';
@@ -61,11 +61,6 @@ const RoomScreen = ({navigation, route}: Props) => {
 			createdAt: serverTimestamp(),
 		});
 
-		try {
-			await updateDoc(doc(firestore, 'Rooms', route.params.id), {lastUpdated: serverTimestamp()});
-		} catch (e) {
-			console.error(e);
-		}
 		setMessageText('');
 		setIsSending(false);
 	};
@@ -87,12 +82,6 @@ const RoomScreen = ({navigation, route}: Props) => {
 				imageURL: `data:${asset.type};base64, ${asset.base64!}`,
 			});
 		});
-
-		try {
-			updateDoc(doc(firestore, 'Rooms', route.params.id), {lastUpdated: serverTimestamp()});
-		} catch (e) {
-			console.error(e);
-		}
 	};
 
 	const openImage = (uri: string) => {

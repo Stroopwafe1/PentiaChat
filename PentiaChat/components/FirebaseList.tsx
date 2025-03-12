@@ -1,8 +1,9 @@
 import { ReactNativeFirebase } from '@react-native-firebase/app';
 import { FirebaseFirestoreTypes, getDocs, onSnapshot } from '@react-native-firebase/firestore';
-//import { useTheme } from '@react-navigation/native';
 import { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, FlatList, ListRenderItem, RefreshControl, StyleSheet } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, ListRenderItem, RefreshControl } from 'react-native';
+import { getFirebaseListStyle } from './style';
+import { useTheme } from '@react-navigation/native';
 
 export type FirebaseListProps<T extends object> = {
 	query: FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData>;
@@ -17,30 +18,17 @@ const isNativeFirebaseError = (error: any): error is ReactNativeFirebase.NativeF
 	return error instanceof Error && ('namespace') in error;
 };
 
+// Generic component to display our Firestore data
 const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
-	//const theme = useTheme();
+	const theme = useTheme();
 	const [loading, setLoading] = useState(true);
 	const [data, setData] = useState<T[]>(props.skeletonData);
 
 	const [lastFetchedMessage, setLastFetchedMessage] = useState<FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>>();
 
-	const style = StyleSheet.create({
-		container: {
-			flex: 1,
-			flexGrow: 1,
-		},
-		containerMask: {
-			opacity: 0.5,
-		},
-		floating: {
-			position: 'absolute',
-			left: 0,
-			right: 0,
-			//backgroundColor: theme.colors.background.replace('rgb', 'rgba').replace(')', ', 0.7)'),
-			zIndex: 10,
-		},
-	});
+	const style = getFirebaseListStyle(theme);
 
+	// Listen for real time data updates
 	useEffect(() => {
 		const subscriber = onSnapshot(props.query, (querySnapshot) => {
 			const dataData: T[] = [];
@@ -55,6 +43,8 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 				key: documentSnapshot.id,
 				} as any); // We know they are the correct data, but Typescript cannot infer that from the callback
 			});
+
+			// This is to enable 'pagination'. When we scroll to the end, we fetch the next 'page' from Firebase
 			setLastFetchedMessage(querySnapshot.docs[querySnapshot.docs.length - 1]);
 
 			if (props.inverted) {
@@ -76,7 +66,6 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 					Alert.alert('Permission Error', 'Permission Denied trying to access this data');
 					break;
 				// Ideally we'd define more specific error cases and send those to the user
-				// But this is just a demo app to assess my programming skills so... yeah
 				// Full list of codes is here https://firebase.google.com/docs/reference/js/firestore_.md#firestoreerrorcode
 				default:
 					Alert.alert('Firebase error', error.code);
@@ -111,6 +100,8 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 				key: documentSnapshot.id,
 				} as any); // We know they are the correct data, but Typescript cannot infer that from the callback
 			});
+
+			// This is to enable 'pagination'. When we scroll to the end, we fetch the next 'page' from Firebase
 			setLastFetchedMessage(querySnapshot.docs[querySnapshot.docs.length - 1]);
 		} catch(error) {
 			handleError(error as Error);
@@ -125,6 +116,7 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 		props.setSkeleton(false);
 	};
 
+	// Function that gets called when we scroll close to the end of our current list
 	const fetchMore = async () => {
 		if (lastFetchedMessage === undefined) {
 			return;

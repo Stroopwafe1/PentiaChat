@@ -43,8 +43,12 @@ export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 
 	const subscribeToTopic = async (topic: string) => {
 		let granted = false;
+
+		// Check if we have already have asked the user before
 		const savedInfo = await AsyncStorage.getItem(`notifications-${topic}`);
 		if (savedInfo !== null) {
+			// If the user told us to never ask again, ignore the subscription request.
+			// I don't know if this is managed by the system itself, but it's better to be extra safe
 			if (savedInfo === 'never_ask_again') {
 				return;
 			} else {
@@ -55,6 +59,7 @@ export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 			return messaging.subscribeToTopic(topic);
 		}
 
+		// Request permissions for notifications
 		if (Platform.OS === 'android') {
 			granted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
 			if (!granted) {
@@ -84,7 +89,7 @@ export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 			setInitialising(false);
 		}
 		if (_user !== null) {
-			// Add user to database if not exists yet
+			// Add user to database if not exists yet, or update if it does
 			const newUserRef = doc(firestore, 'Users', _user.uid);
 
 			setDoc(newUserRef, {
@@ -105,6 +110,8 @@ export const FirebaseContextProvider = (props: FirebaseContextProps) => {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
+	// Effect to get a live cache of all users in our system for quick lookup of user info like profile pictures
+	// I don't know if fetching all users and caching those is more effective than fetching a user whenever we need
 	useEffect(() => {
 		if (user === null) {
 			return () => {};

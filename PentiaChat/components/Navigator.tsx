@@ -2,14 +2,14 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoomsListScreen from '../screens/rooms-list/RoomsList.screen';
 import SplashScreen from '../screens/splash/Splash.screen';
-import { ReactNode, useContext, useEffect, useState } from 'react';
+import { ReactNode, useContext } from 'react';
 import { FirebaseContext } from './providers/FirebaseContextProvider';
 import LoginScreen from '../screens/login/Login.screen';
-import { ActivityIndicator, Button, Linking, Pressable, Text, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Button, Linking, useColorScheme } from 'react-native';
 import RoomScreen from '../screens/room/Room.screen';
 import { Screens } from '../screens/NavigatorScreens';
 import { FirebaseMessagingTypes, getMessaging } from '@react-native-firebase/messaging';
-import { RoomLink } from '../models/Room.model';
+import Notification from './Notification';
 
 const Stack = createNativeStackNavigator<Screens>();
 
@@ -86,9 +86,6 @@ const Navigator = () => {
 	const firebaseContext = useContext(FirebaseContext);
 	const theme = useColorScheme() === 'dark' ? DarkTheme : DefaultTheme;
 
-	const [notificationText, setNotificationText] = useState('');
-	const [notificationRoom, setNotificationRoom] = useState<RoomLink>({key: '', name: ''});
-
 	let screensAvailable: ReactNode | undefined;
 
 	if (firebaseContext.initialising) {
@@ -113,42 +110,9 @@ const Navigator = () => {
 		);
 	}
 
-	useEffect(() => {
-		const subscriber = getMessaging().onMessage(async message => {
-			if (message.notification === undefined) {
-				return;
-			}
-			if (message.data === undefined) {
-				return;
-			}
-			if (!('room' in message.data)) {
-				return;
-			}
-			if (typeof (message.data.room) !== 'string') {
-				return;
-			}
-
-			const roomInfo: RoomLink = JSON.parse(message.data.room);
-			setNotificationRoom(roomInfo);
-			setNotificationText(message.notification.body || '');
-
-		});
-
-		return subscriber;
-	}, []);
-
-	const linkToRoom = () => {
-		console.log(`Opening pentiachat://room/${notificationRoom.key}/${notificationRoom.name}`);
-		Linking.openURL(`pentiachat://room/${notificationRoom.key}/${notificationRoom.name}`);
-	};
-
 	return (
 		<>
-		<Pressable onPress={linkToRoom}>
-			<View>
-				<Text style={{color: 'white'}}>{notificationText}</Text>
-			</View>
-		</Pressable>
+		<Notification />
 		<NavigationContainer linking={linking} theme={theme} fallback={<ActivityIndicator animating />}>
 			<Stack.Navigator>
 				{screensAvailable}

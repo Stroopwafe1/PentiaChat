@@ -1,10 +1,11 @@
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { useEffect } from 'react';
-import { Animated, StyleSheet, Text, TouchableHighlight, useAnimatedValue, View } from 'react-native';
+import { Animated, Text, TouchableHighlight, useAnimatedValue, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Screens } from '../../screens/NavigatorScreens';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Timestamp } from '@react-native-firebase/firestore';
+import { getRoomListEntryStyle } from './style';
 
 export type RoomListEntryProps = {
 	name: string;
@@ -19,39 +20,7 @@ const RoomListEntry = (props: RoomListEntryProps) => {
 	const fadeAnim = useAnimatedValue(1, {useNativeDriver: true});
 	const navigation = useNavigation<NativeStackNavigationProp<Screens>>();
 
-	const style = StyleSheet.create({
-		container: {
-			justifyContent: 'space-around',
-			flexDirection: 'row',
-			alignContent: 'center',
-			backgroundColor: theme.colors.border,
-			opacity: fadeAnim,
-			borderBottomColor: theme.colors.primary,
-			borderBottomWidth: 1,
-		},
-
-		icon: {
-			alignSelf: 'center',
-		},
-
-		skeletonText: {
-			color: 'grey',
-			backgroundColor: 'grey',
-			borderRadius: 10,
-		},
-		text: {
-			color: theme.colors.text,
-		},
-		commonText: {
-			marginBottom: 5,
-		},
-		title: {
-			fontSize: 30,
-		},
-		italic: {
-			fontStyle: 'italic',
-		},
-	});
+	const style = getRoomListEntryStyle(theme, fadeAnim);
 
 	const runAnimation = () => {
 		if (!props.skeleton) {

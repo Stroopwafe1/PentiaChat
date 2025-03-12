@@ -16,7 +16,6 @@ const style = StyleSheet.create({
 const SplashScreen = () => {
 	const imageSrc = {uri: 'https://legacy.reactjs.org/logo-og.png'};
 
-	// TODO(lilith): Make this look nicer with like an <ImageBackground> or something
 	return (
 		<View style={style.container}>
 			<ImageBackground style={style.container} source={imageSrc} resizeMode="cover">
