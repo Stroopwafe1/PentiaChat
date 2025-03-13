@@ -47,9 +47,6 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 			// This is to enable 'pagination'. When we scroll to the end, we fetch the next 'page' from Firebase
 			setLastFetchedMessage(querySnapshot.docs[querySnapshot.docs.length - 1]);
 
-			if (props.inverted) {
-				dataData.reverse();
-			}
 			setData(dataData);
 			setLoading(false);
 			props.setSkeleton(false);
@@ -108,9 +105,6 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 			clearTimeout(timeout);
 		}
 
-		if (props.inverted) {
-			dataData.reverse();
-		}
 		setData(dataData);
 		setLoading(false);
 		props.setSkeleton(false);
@@ -136,12 +130,7 @@ const FirebaseList = <T extends object, >(props: FirebaseListProps<T>) => {
 			});
 			setLastFetchedMessage(querySnapshot.docs[querySnapshot.docs.length - 1]);
 
-			if (props.inverted) {
-				dataData.reverse();
-				setData([...dataData, ...data]);
-			} else {
-				setData([...data, ...dataData]);
-			}
+			setData([...data, ...dataData]);
 		} catch(error) {
 			handleError(error as Error);
 		}

@@ -17,8 +17,9 @@ firestore.collection('Rooms').onSnapshot((snapshot) => {
 			const roomRef = firestore.collection('Rooms').doc(change.doc.id);
 			roomRef.collection('Messages').onSnapshot((messageSnap) => {
 				let latestMessage = null;
-				messageSnap.docChanges().forEach((msgChange) => {
-					if (change.type !== 'added') return;
+				messageSnap.docChanges().forEach(async (msgChange) => {
+					if (msgChange.type !== 'added') return;
+					console.log('Message added', msgChange.doc.data());
 
 					const msg = msgChange.doc.data();
 					if (msg.createdAt < room.lastUpdated) return;
@@ -26,19 +27,25 @@ firestore.collection('Rooms').onSnapshot((snapshot) => {
 					if (latestMessage === null) latestMessage = msg;
 					else if (latestMessage.createdAt < msg.createdAt) latestMessage = msg;
 
-					messaging.send({
-						notification: {
-							title: `Room ${room.name} has a new message!`,
-							body: `${msg.content}`,
-						},
-						topic: `room-${change.doc.id}`,
-						data: {
-							"room": JSON.stringify({
-								key: change.doc.id,
-								name: room.name,
-							}),
-						},
-					});
+					console.log('Sending message...');
+					try {
+						const sent = await messaging.send({
+							notification: {
+								title: `Room ${room.name} has a new message!`,
+								body: `${msg.content}`,
+							},
+							topic: `room-${change.doc.id}`,
+							data: {
+								"room": JSON.stringify({
+									key: change.doc.id,
+									name: room.name,
+								}),
+							},
+						});
+						console.log('Sent message', sent);
+					} catch (error) {
+						console.log(error);
+					}
 
 				});
 				if (latestMessage !== null) {

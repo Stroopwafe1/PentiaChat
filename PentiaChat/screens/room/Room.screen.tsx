@@ -42,7 +42,7 @@ const RoomScreen = ({navigation, route}: Props) => {
 	}
 
 	const firestore = getFirestore();
-	const q = query(collection(firestore, 'Rooms', route.params.id, 'Messages'), orderBy('createdAt'), limit(50));
+	const q = query(collection(firestore, 'Rooms', route.params.id, 'Messages'), orderBy('createdAt', 'desc'), limit(50));
 
 	const sendMessage = async (_e: GestureResponderEvent) => {
 		// Don't allow the user to send an empty message
