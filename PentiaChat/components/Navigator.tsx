@@ -88,7 +88,7 @@ const Navigator = () => {
 
 	let screensAvailable: ReactNode | undefined;
 
-	if (firebaseContext.initialising) {
+	if (firebaseContext.initialising || firebaseContext.app === undefined) {
 		screensAvailable = <Stack.Screen name="Splash" options={{headerShown: false}} component={SplashScreen} />;
 	} else if (firebaseContext.user === null) {
 		screensAvailable = (
