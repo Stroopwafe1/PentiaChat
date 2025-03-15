@@ -2,6 +2,20 @@
 
 I've been tasked by Pentia Mobile to make a simple chat application using the Firebase platform and React Native.
 
+## Directory Structure
+
+PentiaChat: The main application
+
+- .bundle: The configuration needed for IOS (I think)
+- \_\_tests__: The unit tests for React
+- android: The generated Android project for use in Android Studio
+- components: Reusable components for potentially other projects
+- ios: The generated IOS project to build in XCode
+- models: Data models for type hints inside the project
+- screens: The screens used in the application, these are not meant to be used in other projects
+
+Admin: A small NodeJS project to circumvent Firebase's tier upgrade (I want to stay on the free tier without putting in payment details but still need some of the features)
+
 ## Requirements / Dependencies
 
 - NodeJS >= 22.0
